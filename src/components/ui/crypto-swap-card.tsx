@@ -74,6 +74,8 @@ export default function SwapCard({
   const [txHash, setTxHash] = React.useState<string | null>(null)
   const [txStatus, setTxStatus] = React.useState<"success" | "failed" | null>(null)
 
+  const [poolAction, setPoolAction] = React.useState<"add" | "remove">("remove")
+
   const { data: fromBalance } = useBalance({
     address: walletAddress,
     token: isNativeAddr(fromAddr) ? undefined : fromAddr as `0x${string}`,
@@ -94,23 +96,29 @@ export default function SwapCard({
       if (!routerAddr) return;
 
       const [allowFrom, allowTo] = await Promise.all([
-        subMode === "remove" && selectedLp 
+        (subMode === "remove" && poolAction === "remove" && selectedLp) 
           ? getAllowance(selectedLp.pairAddress, walletAddress, routerAddr)
           : getAllowance(fromAddr, walletAddress, routerAddr),
-        mode === "pool" && subMode === "add" ? getAllowance(toAddr, walletAddress, routerAddr) : Promise.resolve(parseEther("1000000000"))
+        (mode === "pool" && (subMode === "add" || (subMode === "remove" && poolAction === "add"))) 
+          ? getAllowance(toAddr, walletAddress, routerAddr) 
+          : Promise.resolve(parseEther("1000000000"))
       ]);
 
-      const amountInWei = mode === "pool" && subMode === "remove" && selectedLp
+      const amountInWei = (mode === "pool" && subMode === "remove" && poolAction === "remove" && selectedLp)
         ? (selectedLp.lpBalance * BigInt(Math.floor(removePercent))) / 100n
         : parseEther(fromAmount || "0");
       const amountOutWei = parseEther(toAmount || "0");
 
       setNeedsApprovalFrom(
-        (mode === "pool" && subMode === "remove" && selectedLp) 
+        (mode === "pool" && subMode === "remove" && poolAction === "remove" && selectedLp) 
           ? allowFrom < amountInWei 
           : (!isNativeAddr(fromAddr) && allowFrom < amountInWei)
       );
-      setNeedsApprovalTo(mode === "pool" && subMode === "add" && !isNativeAddr(toAddr) && allowTo < amountOutWei);
+      setNeedsApprovalTo(
+        (mode === "pool" && (subMode === "add" || (subMode === "remove" && poolAction === "add"))) 
+          ? (!isNativeAddr(toAddr) && allowTo < amountOutWei)
+          : false
+      );
     } catch (err) {
       console.error("Allowance check error:", err);
     }
@@ -298,13 +306,13 @@ export default function SwapCard({
           rows: [
             { label: "SENT", value: `${fromAmount} ${ti}` },
             { label: "RECEIVED", value: `${toAmount} ${to}` },
-            { label: "ROUTER", value: ROUTERS[rKey].label || "LiteSwap V2" },
+            { label: "ROUTER", value: ROUTERS[rKey].label || "LitDeX" },
           ],
         });
         refreshPoints();
       } else {
-        if (subMode === "add") {
-          const rAddr = DEFAULT_ROUTER;
+        if (subMode === "add" || (subMode === "remove" && poolAction === "add")) {
+          const rKey = "liteswap";
           const amtA = parseEther(fromAmount);
           const amtB = parseEther(toAmount);
 
@@ -341,7 +349,6 @@ export default function SwapCard({
             showError("Please select a liquidity position first.");
             return;
           }
-          const rAddr = DEFAULT_ROUTER;
           const lpToRemove = (selectedLp.lpBalance * BigInt(Math.floor(removePercent))) / 100n;
           
           const hash = await removeLiquidity({
@@ -366,10 +373,12 @@ export default function SwapCard({
             subtitle: "PROTOCOL VERIFICATION COMPLETE",
             rows: [
               { label: "PAIR", value: `${ta} / ${tb}` },
-              { label: "STATUS", value: "TOKENS RETURNED" },
+              { label: "STATUS", value: "POSITION CLOSED" }
             ],
           });
+          refreshPoints();
           fetchPositions();
+          setSelectedLp(null);
         }
       }
     } catch (err: any) {
@@ -403,11 +412,11 @@ export default function SwapCard({
       <header className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-pretty text-lg sm:text-xl font-semibold">
-            {mode === "pool" ? (subMode === "add" ? "Add Pool" : "Remove Pool") : "Swap"}
+            {mode === "pool" ? (subMode === "add" ? "Add Pool" : "Your Pools") : "Swap"}
           </h2>
           <p className="text-sm text-brand-text-muted">
             {mode === "pool" 
-              ? (subMode === "add" ? "Provide liquidity and earn fees" : "Withdraw your liquidity and rewards")
+              ? (subMode === "add" ? "Provide liquidity and earn fees" : "Manage your liquidity positions")
               : `Trading on ${ROUTERS[pickRouter(fromAddr, toAddr)].label}`}
           </p>
         </div>
@@ -424,13 +433,17 @@ export default function SwapCard({
                 Add
               </button>
               <button
-                onClick={() => setSubMode("remove")}
+                onClick={() => {
+                  setSubMode("remove");
+                  // Optional: refresh positions when clicking Your Pools
+                  fetchPositions();
+                }}
                 className={cn(
                   "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all",
                   subMode === "remove" ? "bg-white text-black" : "text-brand-text-muted hover:text-white"
                 )}
               >
-                Remove
+                Your Pools
               </button>
             </div>
           )}
@@ -439,13 +452,14 @@ export default function SwapCard({
 
       {mode === "pool" && subMode === "remove" ? (
         <div className="flex flex-col gap-4">
-          <label className="text-xs uppercase font-bold text-brand-text-muted tracking-widest">
-            Select Position to Remove
+          <label className="text-xs uppercase font-bold text-brand-text-muted tracking-widest px-1">
+            Select Position
           </label>
           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto no-scrollbar">
             {lpPositions.length === 0 ? (
-              <div className="p-6 border-2 border-dashed border-white/5 rounded-xl text-center bg-black/20">
-                 <p className="text-[10px] text-brand-text-muted uppercase font-bold tracking-widest">No positions found</p>
+              <div className="p-10 border border-brand-border rounded-2xl text-center bg-brand-surface-2/50 backdrop-blur-sm">
+                 <p className="text-[10px] text-brand-text-muted uppercase font-bold tracking-[0.2em] mb-4">No active positions</p>
+                 <button onClick={() => setSubMode("add")} className="px-4 py-2 bg-white text-black text-[10px] font-bold uppercase rounded-lg hover:opacity-90 transition-all">Add Liquidity</button>
               </div>
             ) : (
               lpPositions.map((pos) => {
@@ -455,17 +469,31 @@ export default function SwapCard({
                 return (
                   <button
                     key={pos.pairAddress}
-                    onClick={() => setSelectedLp(pos)}
+                    onClick={() => {
+                        setSelectedLp(pos);
+                        // Pre-fill tokens
+                        setFromAddr(pos.token0);
+                        setToAddr(pos.token1);
+                    }}
                     className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border transition-all",
-                      isSelected ? "bg-white/10 border-white/20" : "bg-black/20 border-white/5 hover:bg-white/5"
+                      "flex items-center justify-between p-4 rounded-xl border transition-all relative overflow-hidden",
+                      isSelected 
+                        ? "bg-white/10 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.03)]" 
+                        : "bg-brand-surface-2 border-brand-border hover:border-white/10 hover:bg-white/[0.02]"
                     )}
                   >
-                    <div className="flex items-center gap-2">
-                       <span className="font-bold text-xs">{t0?.symbol || "???"} / {t1?.symbol || "???"}</span>
+                    {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white" />}
+                    <div className="flex items-center gap-3">
+                       <div className="flex -space-x-2">
+                          <img src={t0?.image} className="w-5 h-5 rounded-full border border-black" alt="" />
+                          <img src={t1?.image} className="w-5 h-5 rounded-full border border-black" alt="" />
+                       </div>
+                       <span className={cn("font-bold text-xs", isSelected ? "text-white" : "text-brand-text-muted")}>
+                         {t0?.symbol} / {t1?.symbol}
+                       </span>
                     </div>
                     <div className="text-right">
-                       <div className="text-[10px] font-bold text-white">{(Number(pos.share)/100).toFixed(2)}% SHARE</div>
+                       <div className="text-[10px] font-bold text-white tracking-widest">{(Number(pos.share)/100).toFixed(2)}% SHARE</div>
                        <div className="text-[9px] text-brand-text-muted font-mono">{formatTokenDisplay(formatEther(pos.lpBalance))} LP</div>
                     </div>
                   </button>
@@ -475,28 +503,117 @@ export default function SwapCard({
           </div>
           
           {selectedLp && (
-            <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 space-y-4">
-               <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-brand-text-muted uppercase">Amount to Remove</span>
-                  <span className="text-lg font-bold">{removePercent}%</span>
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-5 rounded-2xl bg-brand-surface-2 border border-brand-border space-y-6"
+            >
+               <div className="flex bg-black/40 rounded-xl p-1 border border-white/5">
+                  <button 
+                    onClick={() => setPoolAction("remove")}
+                    className={cn(
+                      "flex-1 py-2 text-[10px] font-bold uppercase tracking-[0.15em] rounded-lg transition-all",
+                      poolAction === "remove" ? "bg-white text-black" : "text-brand-text-muted hover:text-white"
+                    )}
+                  >
+                    Remove
+                  </button>
+                  <button 
+                    onClick={() => setPoolAction("add")}
+                    className={cn(
+                      "flex-1 py-2 text-[10px] font-bold uppercase tracking-[0.15em] rounded-lg transition-all",
+                      poolAction === "add" ? "bg-white text-black" : "text-brand-text-muted hover:text-white"
+                    )}
+                  >
+                    Add
+                  </button>
                </div>
-               <input 
-                type="range" 
-                min="1" max="100" 
-                value={removePercent} 
-                onChange={(e) => setRemovePercent(parseInt(e.target.value))}
-                className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-brand-surface-2 rounded-full cursor-pointer transition-all"
-                style={{
-                  background: `linear-gradient(to right, var(--slider-fill) ${removePercent}%, var(--slider-track) ${removePercent}%)`
-                }}
-               />
-               <div className="flex justify-between text-[9px] font-bold text-brand-text-muted uppercase tracking-widest">
-                  <button onClick={() => setRemovePercent(25)}>25%</button>
-                  <button onClick={() => setRemovePercent(50)}>50%</button>
-                  <button onClick={() => setRemovePercent(75)}>75%</button>
-                  <button onClick={() => setRemovePercent(100)}>100%</button>
-               </div>
-            </div>
+
+               {poolAction === "remove" ? (
+                 <div className="space-y-6">
+                    <div className="flex justify-between items-end">
+                       <div>
+                          <span className="text-[10px] font-bold text-brand-text-muted uppercase tracking-[0.2em] block mb-1">Amount to Remove</span>
+                          <span className="text-2xl font-mono font-bold text-white tracking-tighter">{removePercent}%</span>
+                       </div>
+                       <div className="text-right">
+                          <span className="text-[8px] font-bold text-brand-text-muted uppercase tracking-widest block">Est. Withdrawal</span>
+                          <span className="text-[10px] font-mono text-white/60">
+                             {formatTokenDisplay((Number(formatEther(selectedLp.lpBalance)) * removePercent / 100).toString())} LP
+                          </span>
+                       </div>
+                    </div>
+                    <div className="px-1 space-y-4">
+                    <input 
+                      type="range" 
+                      min="1" max="100" 
+                      value={removePercent} 
+                      onChange={(e) => setRemovePercent(parseInt(e.target.value))}
+                      className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-brand-bg rounded-full cursor-pointer transition-all"
+                      style={{
+                        background: `linear-gradient(to right, var(--slider-fill) ${removePercent}%, var(--slider-track) ${removePercent}%)`
+                      }}
+                     />
+                     <div className="flex justify-between gap-2">
+                        {[25, 50, 75, 100].map(pct => (
+                          <button 
+                            key={pct} 
+                            onClick={() => setRemovePercent(pct)} 
+                            className={cn(
+                                "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border",
+                                removePercent === pct ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-brand-text-muted hover:text-white"
+                            )}
+                          >
+                             {pct}%
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+                 </div>
+               ) : (
+                 <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-4">
+                       <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
+                             <span>{coinMap.get(selectedLp.token0)?.symbol} Amount</span>
+                             <span>Bal: {fromBalance ? formatTokenDisplay(formatEther(fromBalance.value)) : "0.00"}</span>
+                          </div>
+                          <div className="flex items-center gap-3 bg-brand-bg border border-white/5 p-3 rounded-xl focus-within:border-white/20 transition-colors">
+                             <input
+                               type="number"
+                               placeholder="0.00"
+                               className="flex-1 bg-transparent outline-none text-right font-mono text-xl"
+                               value={fromAmount}
+                               onChange={(e) => setFromAmount(e.target.value)}
+                             />
+                             <button onClick={() => fromBalance && setFromAmount(formatEther(fromBalance.value))} className="px-2 py-1 text-[9px] font-bold bg-white/10 rounded uppercase hover:bg-white/20 transition-colors">Max</button>
+                          </div>
+                       </div>
+
+                       <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
+                             <span>{coinMap.get(selectedLp.token1)?.symbol} Amount</span>
+                             <span>Bal: {toBalance ? formatTokenDisplay(formatEther(toBalance.value)) : "0.00"}</span>
+                          </div>
+                          <div className="flex items-center gap-3 bg-brand-bg border border-white/5 p-3 rounded-xl focus-within:border-white/20 transition-colors">
+                             <input
+                               type="number"
+                               placeholder="0.00"
+                               className="flex-1 bg-transparent outline-none text-right font-mono text-xl"
+                               value={toAmount}
+                               onChange={(e) => setToAmount(e.target.value)}
+                             />
+                             <button onClick={() => toBalance && setToAmount(formatEther(toBalance.value))} className="px-2 py-1 text-[9px] font-bold bg-white/10 rounded uppercase hover:bg-white/20 transition-colors">Max</button>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="flex items-center justify-between px-1 text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">
+                       <span>Est. Pool Share</span>
+                       <span className="text-white">{poolShare}%</span>
+                    </div>
+                 </div>
+               )}
+            </motion.div>
           )}
         </div>
       ) : (
@@ -752,11 +869,11 @@ export default function SwapCard({
           : isSwapping || isApproving
             ? "Processing..." 
             : needsApprovalFrom 
-              ? `Approve ${subMode === "remove" ? "LP" : coinMap.get(fromAddr)?.symbol}` 
+              ? `Approve ${subMode === "remove" && poolAction === "remove" ? "LP" : coinMap.get(fromAddr)?.symbol}` 
               : needsApprovalTo 
                 ? `Approve ${coinMap.get(toAddr)?.symbol}` 
                 : mode === "pool" 
-                  ? (subMode === "add" ? "Confirm Add Liquidity" : "Confirm Remove Liquidity") 
+                  ? ((subMode === "add" || (subMode === "remove" && poolAction === "add")) ? "Confirm Add Liquidity" : "Confirm Remove Liquidity") 
                   : "Confirm Swap"}
       </motion.button>
 
