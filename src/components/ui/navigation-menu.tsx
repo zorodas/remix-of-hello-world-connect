@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, useScroll, useMotionValueEvent, AnimatePresence, Variants } from "framer-motion";
+import { motion, useScroll, useMotionValueEvent, AnimatePresence, Variants } from "motion/react";
 import { Navigation, Menu, X, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
