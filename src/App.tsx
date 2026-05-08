@@ -114,27 +114,32 @@ const SwapPage = () => {
 };
 
 // --- Page: Pool ---
-const PoolPage = () => (
-  <motion.div 
-    initial={{ opacity: 0, scale: 0.98 }} 
-    animate={{ opacity: 1, scale: 1 }} 
-    className="flex flex-col items-center justify-center min-h-[80vh] px-4 w-full py-12"
-  >
-    <SwapCard mode="pool" className="brand-glow-hover transition-all duration-500" />
-    
-    <div className="w-full max-w-[480px] mt-12">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-white italic">Active Liquidity</h2>
-          <p className="text-[10px] text-brand-text-muted uppercase tracking-widest mt-1">Your Positions</p>
+const PoolPage = () => {
+  const { isConnected } = useAccount();
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      className="flex flex-col items-center justify-center min-h-[80vh] px-4 w-full py-12"
+    >
+      <SwapCard mode="pool" className="brand-glow-hover transition-all duration-500" />
+      
+      {!isConnected && (
+        <div className="w-full max-w-[480px] mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-white italic">Active Liquidity</h2>
+              <p className="text-[10px] text-brand-text-muted uppercase tracking-widest mt-1">Your Positions</p>
+            </div>
+          </div>
+          <div className="p-8 border-2 border-dashed border-white/5 rounded-2xl text-center bg-black/20 backdrop-blur-sm">
+              <p className="text-brand-text-muted font-mono text-xs">Connect a wallet to see your active pools.</p>
+          </div>
         </div>
-      </div>
-      <div className="p-8 border-2 border-dashed border-white/5 rounded-2xl text-center bg-black/20 backdrop-blur-sm">
-          <p className="text-brand-text-muted font-mono text-xs">Connect a wallet to see your active pools.</p>
-      </div>
-    </div>
-  </motion.div>
-);
+      )}
+    </motion.div>
+  );
+};
 
 // --- Page: Points ---
 const PointsPage = ({ setPage }: { setPage: (p: PageID) => void }) => {
@@ -998,8 +1003,8 @@ const NFTsPage = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 container mx-auto px-4">
       <div className="mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter mb-2">Genesis NFTs</h1>
-        <p className="text-brand-text-muted text-sm max-w-xl">Mint Genesis NFTs with your points and earn daily zkLTC, USDC and LDEX rewards.</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter mb-2">LitDeX NFTs</h1>
+        <p className="text-brand-text-muted text-sm max-w-xl">Mint LitDeX NFTs with your points and earn daily zkLTC, USDC and LDEX rewards.</p>
       </div>
 
       {/* Rewards are claimed per NFT type in the "Your NFTs" section below */}
@@ -3009,9 +3014,9 @@ const QuestsPage = () => {
   };
 
   const groups: { key: string; title: string; subtitle: string }[] = [
-    { key: 'follow', title: 'X Follows',  subtitle: '100 pts each' },
-    { key: 'like',   title: 'Like & Retweet', subtitle: '10 pts each' },
-    { key: 'tg',     title: 'Telegram',   subtitle: '50 pts each' },
+    { key: 'follow', title: 'X Follows',  subtitle: '' },
+    { key: 'like',   title: 'Like & Retweet', subtitle: '' },
+    { key: 'tg',     title: 'Telegram',   subtitle: '' },
   ];
 
   const totalEarned = QUESTS_LIST.reduce((acc, q) => acc + (completed[q.id] ? q.pts : 0), 0);
@@ -3029,7 +3034,7 @@ const QuestsPage = () => {
             <h1 className="text-xs font-bold uppercase tracking-[0.3em] text-white">Socials & Quests</h1>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1 h-1 rounded-full bg-white/40 animate-pulse" />
-              <span className="text-[10px] text-brand-text-muted font-medium uppercase tracking-widest">Earn LitDeX Points</span>
+              <span className="text-[10px] text-brand-text-muted font-medium uppercase tracking-widest">Earn Points</span>
             </div>
           </div>
         </div>
@@ -3053,7 +3058,7 @@ const QuestsPage = () => {
             <div className="flex items-end justify-between mb-4">
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">{group.title}</h2>
-                <p className="text-[10px] text-brand-text-muted uppercase tracking-widest">{group.subtitle}</p>
+                {group.subtitle && <p className="text-[10px] text-brand-text-muted uppercase tracking-widest">{group.subtitle}</p>}
               </div>
             </div>
             <div className="space-y-3">
@@ -4054,13 +4059,16 @@ export default function App() {
 
       {/* Top Left Logo & Theme Toggle */}
       <div className="fixed top-4 left-6 z-[60] flex items-center gap-5">
-        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setActivePage('swap')}>
+        <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setActivePage('swap')}>
           <div className="relative">
             <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] transition-all duration-700 group-hover:rotate-6">
               <LogoLD size={24} />
             </div>
             <div className="absolute -inset-2 bg-white/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           </div>
+          <span className="text-2xl font-black italic tracking-tighter text-white dark:text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+            LitDeX
+          </span>
         </div>
         
         <div className="h-6 w-px bg-white/10 ml-1" />

@@ -74,6 +74,18 @@ export default function SwapCard({
   const [txHash, setTxHash] = React.useState<string | null>(null)
   const [txStatus, setTxStatus] = React.useState<"success" | "failed" | null>(null)
 
+  const { data: fromBalance } = useBalance({
+    address: walletAddress,
+    token: isNativeAddr(fromAddr) ? undefined : fromAddr as `0x${string}`,
+    chainId: litvmChain.id,
+  });
+
+  const { data: toBalance } = useBalance({
+    address: walletAddress,
+    token: isNativeAddr(toAddr) ? undefined : toAddr as `0x${string}`,
+    chainId: litvmChain.id,
+  });
+
   const checkAllowances = React.useCallback(async () => {
     if (!walletAddress || !fromAddr || (!toAddr && subMode !== "remove")) return;
 
@@ -473,7 +485,10 @@ export default function SwapCard({
                 min="1" max="100" 
                 value={removePercent} 
                 onChange={(e) => setRemovePercent(parseInt(e.target.value))}
-                className="w-full accent-white"
+                className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-brand-surface-2 rounded-full cursor-pointer transition-all"
+                style={{
+                  background: `linear-gradient(to right, var(--slider-fill) ${removePercent}%, var(--slider-track) ${removePercent}%)`
+                }}
                />
                <div className="flex justify-between text-[9px] font-bold text-brand-text-muted uppercase tracking-widest">
                   <button onClick={() => setRemovePercent(25)}>25%</button>
@@ -507,6 +522,16 @@ export default function SwapCard({
               }}
               side="from"
             />
+            <button
+              onClick={() => {
+                if (fromBalance) {
+                  setFromAmount(formatEther(fromBalance.value))
+                }
+              }}
+              className="px-2 py-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors"
+            >
+              MAX
+            </button>
             <input
               id="from-amount"
               inputMode="decimal"
@@ -519,6 +544,41 @@ export default function SwapCard({
                 if (v === "" || /^[0-9]*\.?[0-9]*$/.test(v)) setFromAmount(v)
               }}
             />
+          </div>
+          {/* From Percentage Slider */}
+          <div className="px-1 space-y-2 mt-1">
+            <input 
+              type="range" 
+              min="0" max="100" 
+              value={fromBalance && Number(formatEther(fromBalance.value)) > 0 ? (Number(fromAmount) / Number(formatEther(fromBalance.value)) * 100) : 0} 
+              onChange={(e) => {
+                if (fromBalance) {
+                  const pct = parseInt(e.target.value)
+                  const amt = (Number(formatEther(fromBalance.value)) * pct) / 100
+                  setFromAmount(amt.toFixed(6))
+                }
+              }}
+              className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-brand-surface-2 rounded-full cursor-pointer transition-all"
+              style={{
+                background: `linear-gradient(to right, var(--slider-fill) ${fromBalance && Number(formatEther(fromBalance.value)) > 0 ? (Number(fromAmount) / Number(formatEther(fromBalance.value)) * 100) : 0}%, var(--slider-track) ${fromBalance && Number(formatEther(fromBalance.value)) > 0 ? (Number(fromAmount) / Number(formatEther(fromBalance.value)) * 100) : 0}%)`
+              }}
+            />
+            <div className="flex justify-between text-[8px] font-bold text-brand-text-muted uppercase tracking-widest px-1">
+              {[25, 50, 75, 100].map(pct => (
+                <button 
+                  key={pct}
+                  onClick={() => {
+                    if (fromBalance) {
+                      const amt = (Number(formatEther(fromBalance.value)) * pct) / 100
+                      setFromAmount(amt.toFixed(6))
+                    }
+                  }}
+                  className="hover:text-white transition-colors"
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -561,18 +621,30 @@ export default function SwapCard({
               side="to"
             />
             {mode === "pool" ? (
-               <input
-               id="to-amount"
-               inputMode="decimal"
-               pattern="^[0-9]*[.,]?[0-9]*$"
-               placeholder="0.00"
-               className="flex-1 min-w-0 bg-transparent outline-none text-right text-lg sm:text-xl placeholder:text-brand-text-muted font-mono"
-               value={toAmount}
-               onChange={(e) => {
-                 const v = e.target.value.replace(",", ".")
-                 if (v === "" || /^[0-9]*\.?[0-9]*$/.test(v)) setToAmount(v)
-               }}
-             />
+               <>
+                <button
+                  onClick={() => {
+                    if (toBalance) {
+                      setToAmount(formatEther(toBalance.value))
+                    }
+                  }}
+                  className="px-2 py-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors"
+                >
+                  MAX
+                </button>
+                <input
+                  id="to-amount"
+                  inputMode="decimal"
+                  pattern="^[0-9]*[.,]?[0-9]*$"
+                  placeholder="0.00"
+                  className="flex-1 min-w-0 bg-transparent outline-none text-right text-lg sm:text-xl placeholder:text-brand-text-muted font-mono"
+                  value={toAmount}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(",", ".")
+                    if (v === "" || /^[0-9]*\.?[0-9]*$/.test(v)) setToAmount(v)
+                  }}
+                />
+              </>
             ) : (
               <output
                 id="to-amount"
@@ -585,6 +657,43 @@ export default function SwapCard({
               </output>
             )}
           </div>
+          {/* To Percentage Slider (Add Pool only) */}
+          {mode === "pool" && subMode === "add" && (
+            <div className="px-1 space-y-2 mt-1">
+              <input 
+                type="range" 
+                min="0" max="100" 
+                value={toBalance && Number(formatEther(toBalance.value)) > 0 ? (Number(toAmount) / Number(formatEther(toBalance.value)) * 100) : 0} 
+                onChange={(e) => {
+                  if (toBalance) {
+                    const pct = parseInt(e.target.value)
+                    const amt = (Number(formatEther(toBalance.value)) * pct) / 100
+                    setToAmount(amt.toFixed(6))
+                  }
+                }}
+                className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-brand-surface-2 rounded-full cursor-pointer transition-all"
+                style={{
+                  background: `linear-gradient(to right, var(--slider-fill) ${toBalance && Number(formatEther(toBalance.value)) > 0 ? (Number(toAmount) / Number(formatEther(toBalance.value)) * 100) : 0}%, var(--slider-track) ${toBalance && Number(formatEther(toBalance.value)) > 0 ? (Number(toAmount) / Number(formatEther(toBalance.value)) * 100) : 0}%)`
+                }}
+              />
+              <div className="flex justify-between text-[8px] font-bold text-brand-text-muted uppercase tracking-widest px-1">
+                {[25, 50, 75, 100].map(pct => (
+                  <button 
+                    key={pct}
+                    onClick={() => {
+                      if (toBalance) {
+                        const amt = (Number(formatEther(toBalance.value)) * pct) / 100
+                        setToAmount(amt.toFixed(6))
+                      }
+                    }}
+                    className="hover:text-white transition-colors"
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       </>
@@ -672,15 +781,23 @@ export default function SwapCard({
                    const t0 = coinMap.get(pos.token0);
                    const t1 = coinMap.get(pos.token1);
                    return (
-                       <div key={pos.pairAddress} className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                       <button 
+                        key={pos.pairAddress} 
+                        onClick={() => {
+                          setSubMode("remove");
+                          setSelectedLp(pos);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="w-full flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left"
+                       >
                           <div className="flex items-center gap-2">
-                             <span className="font-bold text-[10px] text-white underline decoration-white/20 underline-offset-4">{t0?.symbol} / {t1?.symbol}</span>
+                             <span className="font-bold text-[10px] text-white underline decoration-white/20 underline-offset-4 group-hover:text-brand-teal transition-colors">{t0?.symbol} / {t1?.symbol}</span>
                           </div>
                           <div className="text-right">
                              <div className="text-[9px] font-bold text-white">{(Number(pos.share)/100).toFixed(2)}% SHARE</div>
                              <div className="text-[8px] text-brand-text-muted">{formatTokenDisplay(formatEther(pos.lpBalance))} LP</div>
                           </div>
-                       </div>
+                       </button>
                    )
                })}
             </div>

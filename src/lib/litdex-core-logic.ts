@@ -254,7 +254,7 @@ export type Token = { address: string; symbol: string; image?: string };
 export type RouterKey = "liteswap" | "omnifun";
 
 export const ROUTERS: Record<RouterKey, { address: string; label: string; factory?: string }> = {
-  liteswap: { address: LITESWAP_ROUTER, label: "LiteSwap V2", factory: LITESWAP_FACTORY },
+  liteswap: { address: LITESWAP_ROUTER, label: "LitDeX", factory: LITESWAP_FACTORY },
   omnifun:  { address: OMNIFUN_ROUTER,  label: "OmniFun" },
 };
 
@@ -1151,11 +1151,11 @@ export async function getSwapQuote(
   const amountInWei = parseEther(amountIn || "0");
   if (amountInWei === 0n) return { amountOut: "0", router: "--", routerKey: "liteswap", path };
 
-  // Try LiteSwap first
+  // Try LitDeX first
   try {
     const router = new Contract(LITESWAP_ROUTER, ROUTER_ABI, readProvider);
     const amounts = await router.getAmountsOut(amountInWei, path);
-    return { amountOut: formatEther(amounts[amounts.length - 1]), router: "LiteSwap", routerKey: "liteswap", path };
+    return { amountOut: formatEther(amounts[amounts.length - 1]), router: "LitDeX", routerKey: "liteswap", path };
   } catch (e) {
     // Try OmniFun router
     try {

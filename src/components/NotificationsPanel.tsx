@@ -99,7 +99,11 @@ export default function NotificationsPanel({
               <p className="text-[#333] text-sm">No notifications yet</p>
             </div>
           ) : (
-            notifs.map(n => <NotificationItem key={n.id} notif={n} />)
+            notifs.map(n => (
+              <div key={n.id}>
+                <NotificationItem notif={n} />
+              </div>
+            ))
           )}
         </div>
 
