@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, X } from "lucide-react";
 import type { SuccessPayload } from "@/lib/feedback";
 

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { motion, AnimatePresence } from "motion/react"
+import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useAccount, useBalance } from "wagmi"
 import { parseEther, formatEther, Contract } from "ethers"
@@ -26,6 +26,7 @@ import {
   LPPosition,
   readProvider
 } from "@/lib/litdex-core-logic"
+import { ChevronDown } from "lucide-react"
 import { addNotif } from "@/lib/notifications"
 import { showSuccess, showError, refreshPoints } from "@/lib/feedback"
 
@@ -75,6 +76,7 @@ export default function SwapCard({
   const [txStatus, setTxStatus] = React.useState<"success" | "failed" | null>(null)
 
   const [poolAction, setPoolAction] = React.useState<"add" | "remove">("remove")
+  const [isPositionsExpanded, setIsPositionsExpanded] = React.useState(false)
 
   const { data: fromBalance } = useBalance({
     address: walletAddress,
@@ -452,17 +454,19 @@ export default function SwapCard({
 
       {mode === "pool" && subMode === "remove" ? (
         <div className="flex flex-col gap-4">
-          <label className="text-xs uppercase font-bold text-brand-text-muted tracking-widest px-1">
-            Select Position
-          </label>
-          <div className="flex flex-col gap-2 max-h-48 overflow-y-auto no-scrollbar">
+          <div className="flex justify-between items-center px-1">
+             <span className="text-[10px] uppercase font-bold text-brand-text-muted tracking-[0.2em]">Active Positions</span>
+             <span className="text-[9px] font-mono text-brand-text-muted">({lpPositions.length})</span>
+          </div>
+          <div className="flex flex-col gap-2 no-scrollbar">
             {lpPositions.length === 0 ? (
               <div className="p-10 border border-brand-border rounded-2xl text-center bg-brand-surface-2/50 backdrop-blur-sm">
                  <p className="text-[10px] text-brand-text-muted uppercase font-bold tracking-[0.2em] mb-4">No active positions</p>
                  <button onClick={() => setSubMode("add")} className="px-4 py-2 bg-white text-black text-[10px] font-bold uppercase rounded-lg hover:opacity-90 transition-all">Add Liquidity</button>
               </div>
             ) : (
-              lpPositions.map((pos) => {
+              <>
+              {(isPositionsExpanded ? lpPositions : lpPositions.slice(0, 2)).map((pos) => {
                 const t0 = coinMap.get(pos.token0);
                 const t1 = coinMap.get(pos.token1);
                 const isSelected = selectedLp?.pairAddress === pos.pairAddress;
@@ -498,7 +502,29 @@ export default function SwapCard({
                     </div>
                   </button>
                 );
-              })
+              })}
+              {lpPositions.length > 2 && (
+                <div className="flex justify-center -mt-1 pb-1">
+                  <button 
+                    onClick={() => setIsPositionsExpanded(!isPositionsExpanded)}
+                    className="group flex flex-col items-center gap-1 p-2 transition-all"
+                  >
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-brand-text-muted group-hover:text-white transition-colors">
+                      {isPositionsExpanded ? "Show Less" : "Show More"}
+                    </span>
+                    <motion.div 
+                      animate={{ 
+                        rotate: isPositionsExpanded ? 180 : 0,
+                        y: isPositionsExpanded ? 1 : 0
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-brand-text-muted group-hover:text-white transition-colors" />
+                    </motion.div>
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
           
@@ -572,41 +598,81 @@ export default function SwapCard({
                  </div>
                ) : (
                  <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="space-y-4">
-                       <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
-                             <span>{coinMap.get(selectedLp.token0)?.symbol} Amount</span>
-                             <span>Bal: {fromBalance ? formatTokenDisplay(formatEther(fromBalance.value)) : "0.00"}</span>
-                          </div>
-                          <div className="flex items-center gap-3 bg-brand-bg border border-white/5 p-3 rounded-xl focus-within:border-white/20 transition-colors">
-                             <input
-                               type="number"
-                               placeholder="0.00"
-                               className="flex-1 bg-transparent outline-none text-right font-mono text-xl"
-                               value={fromAmount}
-                               onChange={(e) => setFromAmount(e.target.value)}
-                             />
-                             <button onClick={() => fromBalance && setFromAmount(formatEther(fromBalance.value))} className="px-2 py-1 text-[9px] font-bold bg-white/10 rounded uppercase hover:bg-white/20 transition-colors">Max</button>
-                          </div>
-                       </div>
-
-                       <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
-                             <span>{coinMap.get(selectedLp.token1)?.symbol} Amount</span>
-                             <span>Bal: {toBalance ? formatTokenDisplay(formatEther(toBalance.value)) : "0.00"}</span>
-                          </div>
-                          <div className="flex items-center gap-3 bg-brand-bg border border-white/5 p-3 rounded-xl focus-within:border-white/20 transition-colors">
-                             <input
-                               type="number"
-                               placeholder="0.00"
-                               className="flex-1 bg-transparent outline-none text-right font-mono text-xl"
-                               value={toAmount}
-                               onChange={(e) => setToAmount(e.target.value)}
-                             />
-                             <button onClick={() => toBalance && setToAmount(formatEther(toBalance.value))} className="px-2 py-1 text-[9px] font-bold bg-white/10 rounded uppercase hover:bg-white/20 transition-colors">Max</button>
-                          </div>
-                       </div>
+              <div className="space-y-4">
+                 <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
+                       <span>{coinMap.get(selectedLp.token0)?.symbol} Amount</span>
+                       <span>Bal: {fromBalance ? formatTokenDisplay(formatEther(fromBalance.value)) : "0.00"}</span>
                     </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 bg-black/40 border border-white/5 p-3 rounded-xl focus-within:border-white/20 transition-colors">
+                         <input
+                           type="number"
+                           placeholder="0.00"
+                           className="flex-1 bg-transparent outline-none text-right font-mono text-xl"
+                           value={fromAmount}
+                           onChange={(e) => setFromAmount(e.target.value)}
+                         />
+                         <button onClick={() => fromBalance && setFromAmount(formatEther(fromBalance.value))} className="px-2 py-1 text-[9px] font-bold bg-white text-black rounded uppercase hover:opacity-90 transition-colors">Max</button>
+                      </div>
+                      <div className="px-1">
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={fromBalance && Number(formatEther(fromBalance.value)) > 0 ? (Number(fromAmount) / Number(formatEther(fromBalance.value)) * 100) : 0} 
+                          onChange={(e) => {
+                            if (fromBalance) {
+                              const pct = parseInt(e.target.value)
+                              const amt = (Number(formatEther(fromBalance.value)) * pct) / 100
+                              setFromAmount(amt.toFixed(6))
+                            }
+                          }}
+                          className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-black/40 border border-white/5 rounded-full cursor-pointer transition-all"
+                          style={{
+                            background: `linear-gradient(to right, var(--slider-fill) ${fromBalance && Number(formatEther(fromBalance.value)) > 0 ? (Number(fromAmount) / Number(formatEther(fromBalance.value)) * 100) : 0}%, var(--slider-track) ${fromBalance && Number(formatEther(fromBalance.value)) > 0 ? (Number(fromAmount) / Number(formatEther(fromBalance.value)) * 100) : 0}%)`
+                          }}
+                        />
+                      </div>
+                    </div>
+                 </div>
+
+                 <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
+                       <span>{coinMap.get(selectedLp.token1)?.symbol} Amount</span>
+                       <span>Bal: {toBalance ? formatTokenDisplay(formatEther(toBalance.value)) : "0.00"}</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 bg-black/40 border border-white/5 p-3 rounded-xl focus-within:border-white/20 transition-colors">
+                         <input
+                           type="number"
+                           placeholder="0.00"
+                           className="flex-1 bg-transparent outline-none text-right font-mono text-xl"
+                           value={toAmount}
+                           onChange={(e) => setToAmount(e.target.value)}
+                         />
+                         <button onClick={() => toBalance && setToAmount(formatEther(toBalance.value))} className="px-2 py-1 text-[9px] font-bold bg-white text-black rounded uppercase hover:opacity-90 transition-colors">Max</button>
+                      </div>
+                      <div className="px-1">
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={toBalance && Number(formatEther(toBalance.value)) > 0 ? (Number(toAmount) / Number(formatEther(toBalance.value)) * 100) : 0} 
+                          onChange={(e) => {
+                            if (toBalance) {
+                              const pct = parseInt(e.target.value)
+                              const amt = (Number(formatEther(toBalance.value)) * pct) / 100
+                              setToAmount(amt.toFixed(6))
+                            }
+                          }}
+                          className="w-full accent-[var(--slider-fill)] h-1.5 appearance-none bg-black/40 border border-white/5 rounded-full cursor-pointer transition-all"
+                          style={{
+                            background: `linear-gradient(to right, var(--slider-fill) ${toBalance && Number(formatEther(toBalance.value)) > 0 ? (Number(toAmount) / Number(formatEther(toBalance.value)) * 100) : 0}%, var(--slider-track) ${toBalance && Number(formatEther(toBalance.value)) > 0 ? (Number(toAmount) / Number(formatEther(toBalance.value)) * 100) : 0}%)`
+                          }}
+                        />
+                      </div>
+                    </div>
+                 </div>
+              </div>
                     <div className="flex items-center justify-between px-1 text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">
                        <span>Est. Pool Share</span>
                        <span className="text-white">{poolShare}%</span>
@@ -645,7 +711,7 @@ export default function SwapCard({
                   setFromAmount(formatEther(fromBalance.value))
                 }
               }}
-              className="px-2 py-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors"
+              className="px-2 py-1 text-[9px] font-bold bg-white text-black rounded uppercase hover:opacity-90 transition-all font-sans"
             >
               MAX
             </button>
@@ -745,7 +811,7 @@ export default function SwapCard({
                       setToAmount(formatEther(toBalance.value))
                     }
                   }}
-                  className="px-2 py-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors"
+                  className="px-2 py-1 text-[9px] font-bold bg-white text-black rounded uppercase hover:opacity-90 transition-all font-sans"
                 >
                   MAX
                 </button>

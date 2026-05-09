@@ -184,6 +184,18 @@
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Remove numeric input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* For Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 @layer base {
   body {
     @apply bg-brand-bg text-brand-text-primary font-sans antialiased selection:bg-brand-teal/30;
