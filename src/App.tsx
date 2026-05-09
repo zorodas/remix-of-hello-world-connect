@@ -4223,7 +4223,8 @@ export default function App() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-6 left-6 right-6 z-50 pointer-events-none flex justify-between items-end"
+              className="fixed left-6 right-6 z-[60] pointer-events-none flex justify-between items-end"
+              style={{ bottom: footerHeight }}
             >
                 {/* Bottom Left Tools */}
                 <div className="hidden lg:flex items-center pointer-events-auto">
