@@ -1453,17 +1453,28 @@ const ERC20Form = ({ onDeployed }: any) => {
       setTimeout(async () => {
         try { if (address) await readPoints(address); } catch { /* ignore */ }
         refreshPoints();
-        const earned = dailyBefore < 100n;
-        const rows = [
-          { label: "BASE POINTS", value: earned ? "+5 PTS" : "DAILY CAP REACHED" },
-          { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
-          { label: "STATUS", value: "LIVE ON LITVM" },
-        ];
-        showSuccess({
-          title: "TOKEN DEPLOYED",
-          subtitle: "PROTOCOL VERIFICATION COMPLETE",
-          rows,
-        });
+        const capReached = dailyBefore >= 100n;
+        if (capReached) {
+          showSuccess({
+            title: "DAILY CAP REACHED",
+            subtitle: "MAX 20 TOKEN DEPLOYS PER DAY",
+            rows: [
+              { label: "BASE POINTS", value: "+0 PTS" },
+              { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+              { label: "STATUS", value: "LIVE ON LITVM" },
+            ],
+          });
+        } else {
+          showSuccess({
+            title: "TOKEN DEPLOYED",
+            subtitle: "PROTOCOL VERIFICATION COMPLETE",
+            rows: [
+              { label: "BASE POINTS", value: "+5 PTS" },
+              { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+              { label: "STATUS", value: "LIVE ON LITVM" },
+            ],
+          });
+        }
         onDeployed?.();
       }, 3000);
     } catch (err) {
