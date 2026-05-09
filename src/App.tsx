@@ -3422,23 +3422,24 @@ const MessengerPage = () => {
         }
       } catch { /* ignore */ }
 
-      await sendMessage(target, content);
-      
-      // Fetch stats BEFORE showing toast
-      const newStats = await fetchStats();
-      
-      // Success flow
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      const sentHash = await sendMessage(target, content);
+      setLastSentHash(sentHash);
+
+      // Fetch stats
+      await fetchStats();
+
+      const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${sentHash}`;
+      const shortHash = `${sentHash.slice(0, 6)}...${sentHash.slice(-4)}`;
 
       const capReached = msgDailyBefore >= 20n;
       if (capReached) {
         showSuccess({
-          title: "DAILY CAP REACHED",
-          subtitle: "MAX 20 POINTS PER DAY FROM MESSAGES",
+          title: "MESSAGE SENT",
+          subtitle: "PROTOCOL VERIFICATION COMPLETE",
           rows: [
             { label: "POINTS EARNED", value: "+0 PTS" },
-            { label: "STATUS", value: "MESSAGE SENT" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "DAILY CAP REACHED" },
           ],
         });
       } else {
@@ -3447,6 +3448,7 @@ const MessengerPage = () => {
           subtitle: "PROTOCOL VERIFICATION COMPLETE",
           rows: [
             { label: "POINTS EARNED", value: "+2 PTS" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
             { label: "STATUS", value: "ON-CHAIN DELIVERED" },
           ],
         });
