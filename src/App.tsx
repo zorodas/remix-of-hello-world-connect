@@ -4237,6 +4237,7 @@ export default function App() {
 
       <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} wallet={walletAddr} />
       <FaucetModal open={faucetModalOpen} onClose={() => setFaucetModalOpen(false)} wallet={walletAddr} />
+      <SuccessCard />
     </div>
   );
 }
