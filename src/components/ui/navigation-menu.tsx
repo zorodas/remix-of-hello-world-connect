@@ -5,6 +5,7 @@ import * as React from "react";
 import { motion, useScroll, useMotionValueEvent, AnimatePresence, Variants } from "framer-motion";
 import { Navigation, Menu, X, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navItems = [
   { name: "Swap", id: "swap" },
@@ -225,8 +226,9 @@ export function AnimatedNavFramer({ activePage, onPageChange }: { activePage: st
           <div
             className="p-6 border-t border-white/10 flex justify-center"
             onClick={(e) => e.stopPropagation()}
-            id="mobile-nav-wallet-slot"
-          />
+          >
+            <ConnectButton />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
