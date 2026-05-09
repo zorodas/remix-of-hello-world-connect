@@ -4203,7 +4203,7 @@ export default function App() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
-              className="sticky top-[calc(100vh-100px)] z-40 h-0 w-full px-3 sm:px-8 pointer-events-none flex justify-between items-end"
+              className="fixed bottom-6 left-6 right-6 z-50 pointer-events-none flex justify-between items-end"
             >
                 {/* Bottom Left Tools */}
                 <div className="hidden lg:flex items-center pointer-events-auto">
