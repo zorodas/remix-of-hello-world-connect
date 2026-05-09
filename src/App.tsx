@@ -2596,6 +2596,22 @@ contract ${label.replace(/\s+/g, '') || "TokenVesting"} is Ownable, ReentrancyGu
         label || "Token Vesting"
       );
       setTxInfo({ hash: res.txHash, address: res.contractAddress });
+      {
+        const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${res.txHash}`;
+        const shortHash = `${res.txHash.slice(0, 6)}...${res.txHash.slice(-4)}`;
+        const ca = res.contractAddress;
+        showSuccess({
+          title: "VESTING CONTRACT DEPLOYED",
+          subtitle: "PROTOCOL VERIFICATION COMPLETE",
+          rows: [
+            { label: "BASE POINTS", value: "+5 PTS" },
+            { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "LIVE ON LITVM" },
+          ],
+        });
+        refreshPoints();
+      }
       onDeployed?.();
     } catch (err) {
       showError(errMsg(err));
