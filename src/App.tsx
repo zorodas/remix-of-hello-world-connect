@@ -3369,7 +3369,7 @@ const MessengerPage = () => {
   const [recipient, setRecipient] = useState('');
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [lastSentHash, setLastSentHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = async () => {
