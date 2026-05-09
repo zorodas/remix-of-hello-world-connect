@@ -68,9 +68,20 @@ export default function SuccessCard() {
                   <span className="font-bold uppercase tracking-widest text-brand-text-muted">
                     {row.label}
                   </span>
-                  <span className="font-bold text-brand-text-primary text-right break-all">
-                    {row.value}
-                  </span>
+                  {row.href ? (
+                    <a
+                      href={row.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold text-brand-text-primary text-right break-all underline decoration-white/30 underline-offset-4 hover:decoration-white"
+                    >
+                      {row.value}
+                    </a>
+                  ) : (
+                    <span className="font-bold text-brand-text-primary text-right break-all">
+                      {row.value}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
