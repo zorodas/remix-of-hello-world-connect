@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
+import SuccessCard from './components/SuccessCard';
 import { addNotif } from './lib/notifications';
 import { 
   ArrowLeftRight, 
