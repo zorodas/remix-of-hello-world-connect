@@ -1872,10 +1872,32 @@ contract MNFT is ERC721, Ownable {
 
       setTxHash(result.txHash);
       setTxStatus("success");
+      const ca = (result as any).tokenAddress as string | undefined;
+      const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${result.txHash}`;
+      const shortHash = `${result.txHash.slice(0, 6)}...${result.txHash.slice(-4)}`;
+      try {
+        if (address) addNotif(address, {
+          type: "deploy",
+          title: "NFT Contract Deployed",
+          message: ca ? `${symbol} at ${ca.slice(0,6)}...${ca.slice(-4)}` : `${symbol} deployed`,
+        });
+      } catch { /* ignore */ }
+      showSuccess({
+        title: "NFT CONTRACT DEPLOYED",
+        subtitle: "PROTOCOL VERIFICATION COMPLETE",
+        rows: [
+          { label: "BASE POINTS", value: "+5 PTS" },
+          { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+          { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+          { label: "STATUS", value: "LIVE ON LITVM" },
+        ],
+      });
+      refreshPoints();
       onDeployed?.();
     } catch (err) {
       console.error("Deploy error:", err);
       setTxStatus("failed");
+      showError(errMsg(err));
     } finally {
       setLoading(false);
     }
@@ -2331,6 +2353,22 @@ contract ldex is Ownable, ReentrancyGuard, Pausable {
         label || "Staking Pool"
       );
       setTxInfo({ hash: res.txHash, address: res.contractAddress });
+      {
+        const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${res.txHash}`;
+        const shortHash = `${res.txHash.slice(0, 6)}...${res.txHash.slice(-4)}`;
+        const ca = res.contractAddress;
+        showSuccess({
+          title: "STAKING CONTRACT DEPLOYED",
+          subtitle: "PROTOCOL VERIFICATION COMPLETE",
+          rows: [
+            { label: "BASE POINTS", value: "+5 PTS" },
+            { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "LIVE ON LITVM" },
+          ],
+        });
+        refreshPoints();
+      }
       onDeployed?.();
     } catch (err) {
       showError(errMsg(err));
@@ -2558,6 +2596,22 @@ contract ${label.replace(/\s+/g, '') || "TokenVesting"} is Ownable, ReentrancyGu
         label || "Token Vesting"
       );
       setTxInfo({ hash: res.txHash, address: res.contractAddress });
+      {
+        const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${res.txHash}`;
+        const shortHash = `${res.txHash.slice(0, 6)}...${res.txHash.slice(-4)}`;
+        const ca = res.contractAddress;
+        showSuccess({
+          title: "VESTING CONTRACT DEPLOYED",
+          subtitle: "PROTOCOL VERIFICATION COMPLETE",
+          rows: [
+            { label: "BASE POINTS", value: "+5 PTS" },
+            { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "LIVE ON LITVM" },
+          ],
+        });
+        refreshPoints();
+      }
       onDeployed?.();
     } catch (err) {
       showError(errMsg(err));
@@ -2828,6 +2882,22 @@ contract LitVMTokenFactory is Ownable {
         pausable
       });
       setTxInfo({ hash: res.txHash, address: res.tokenAddress });
+      {
+        const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${res.txHash}`;
+        const shortHash = `${res.txHash.slice(0, 6)}...${res.txHash.slice(-4)}`;
+        const ca = res.tokenAddress;
+        showSuccess({
+          title: "TOKEN FACTORY DEPLOYED",
+          subtitle: "PROTOCOL VERIFICATION COMPLETE",
+          rows: [
+            { label: "BASE POINTS", value: "+5 PTS" },
+            { label: "CONTRACT", value: ca ? `${ca.slice(0,6)}...${ca.slice(-4)}` : "—" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "LIVE ON LITVM" },
+          ],
+        });
+        refreshPoints();
+      }
       onDeployed?.();
       fetchHistory();
     } catch (err) {
@@ -3299,7 +3369,7 @@ const MessengerPage = () => {
   const [recipient, setRecipient] = useState('');
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [lastSentHash, setLastSentHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = async () => {
@@ -3352,23 +3422,24 @@ const MessengerPage = () => {
         }
       } catch { /* ignore */ }
 
-      await sendMessage(target, content);
-      
-      // Fetch stats BEFORE showing toast
-      const newStats = await fetchStats();
-      
-      // Success flow
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      const sentHash = await sendMessage(target, content);
+      setLastSentHash(sentHash);
+
+      // Fetch stats
+      await fetchStats();
+
+      const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${sentHash}`;
+      const shortHash = `${sentHash.slice(0, 6)}...${sentHash.slice(-4)}`;
 
       const capReached = msgDailyBefore >= 20n;
       if (capReached) {
         showSuccess({
-          title: "DAILY CAP REACHED",
-          subtitle: "MAX 20 POINTS PER DAY FROM MESSAGES",
+          title: "MESSAGE SENT",
+          subtitle: "PROTOCOL VERIFICATION COMPLETE",
           rows: [
             { label: "POINTS EARNED", value: "+0 PTS" },
-            { label: "STATUS", value: "MESSAGE SENT" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "DAILY CAP REACHED" },
           ],
         });
       } else {
@@ -3377,6 +3448,7 @@ const MessengerPage = () => {
           subtitle: "PROTOCOL VERIFICATION COMPLETE",
           rows: [
             { label: "POINTS EARNED", value: "+2 PTS" },
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
             { label: "STATUS", value: "ON-CHAIN DELIVERED" },
           ],
         });

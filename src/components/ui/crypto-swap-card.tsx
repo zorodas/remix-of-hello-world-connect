@@ -246,17 +246,51 @@ export default function SwapCard({
 
   const handleApprove = async (side: "from" | "to") => {
     if (!isConnected || !walletAddress) return;
-    const addr = side === "from" ? fromAddr : toAddr;
-    const amount = side === "from" ? fromAmount : toAmount;
     const routerAddr = mode === "swap" ? ROUTERS[activeRouterKey]?.address : DEFAULT_ROUTER;
+
+    // LP token approve when removing liquidity
+    const isLpApprove = mode === "pool" && subMode === "remove" && poolAction === "remove" && !!selectedLp && side === "from";
+
+    let addr: string;
+    let amountWei: bigint;
+    if (isLpApprove && selectedLp) {
+      addr = selectedLp.pairAddress;
+      // approve full LP balance to avoid future re-approvals
+      amountWei = selectedLp.lpBalance;
+    } else {
+      addr = side === "from" ? fromAddr : toAddr;
+      const amount = side === "from" ? fromAmount : toAmount;
+      amountWei = parseEther(amount || "0");
+    }
 
     setIsApproving(true);
     setTxStatus(null);
     setTxHash(null);
     try {
-      const hash = await approveToken(addr, routerAddr, parseEther(amount));
+      const hash = await approveToken(addr, routerAddr, amountWei);
       setTxHash(hash);
       setTxStatus("success");
+      const explorerUrl = `${litvmChain.blockExplorers.default.url}/tx/${hash}`;
+      const shortHash = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+      if (isLpApprove) {
+        showSuccess({
+          title: "APPROVE CONFIRMED",
+          subtitle: "LP TOKEN APPROVED",
+          rows: [
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "READY TO PROCEED" },
+          ],
+        });
+      } else {
+        showSuccess({
+          title: "APPROVE CONFIRMED",
+          subtitle: "TOKEN APPROVED FOR PROTOCOL",
+          rows: [
+            { label: "TRANSACTION", value: shortHash, href: explorerUrl },
+            { label: "STATUS", value: "READY TO PROCEED" },
+          ],
+        });
+      }
       await checkAllowances();
     } catch (err) {
       console.error("Approval error:", err);
