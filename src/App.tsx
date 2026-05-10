@@ -1637,7 +1637,7 @@ const ERC20Form = ({ onDeployed }: any) => {
             <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Points Reward</p>
-                <h4 className="text-2xl font-black text-white mt-1">+5 points</h4>
+                <h4 className="text-2xl font-black text-white mt-1">{capReachedDisplay ? "DAILY CAP REACHED" : "+5 points"}</h4>
               </div>
               <Coins className="text-white opacity-20" size={32} />
             </div>
@@ -1679,7 +1679,7 @@ const ERC20Form = ({ onDeployed }: any) => {
               <p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">Free deployment</p>
               <div className="flex items-center justify-center gap-2 text-white/50">
                 <Sparkles size={12} />
-                <span className="text-[9px] font-bold uppercase tracking-widest">+5 points earned automatically (10/100 today)</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest">+5 points earned automatically ({deployDaily}/100 today)</span>
               </div>
               <p className="text-[9px] text-brand-text-muted italic opacity-60">
                 Deploys via LitDeXDeployer • points credited automatically by relayer.
