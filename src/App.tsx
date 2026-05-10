@@ -466,6 +466,7 @@ const CheckinPage = () => {
   const [currentDay, setCurrentDay] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [successMsg, setSuccessMsg] = useState<{ ldex: string, pts: number, zkLTC?: string, hash?: string } | null>(null);
   const [checkinError, setCheckinError] = useState<string | null>(null);
 
@@ -561,6 +562,8 @@ const CheckinPage = () => {
         totalCheckins: Number(newInfo.totalCheckins),
         nextLDEX: newInfo.nextLDEX
       });
+      setConfirmed(true);
+      try { await fetchData(); } catch { /* ignore */ }
     } catch (err: any) {
       console.error(err);
       const msg = err.message || err.toString() || "";
@@ -574,7 +577,7 @@ const CheckinPage = () => {
     }
   };
 
-  const isTodayChecked = info && info.lastDay === currentDay;
+  const isTodayChecked = confirmed || (info && info.lastDay === currentDay);
   const streak = info ? info.streak : 0;
   
   // Calculate Sunday bonus info for display
