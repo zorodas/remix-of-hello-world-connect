@@ -727,8 +727,8 @@ const CheckinPage = () => {
             className={cn(
               "w-full max-w-xs py-3 rounded-lg font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-2 border-2",
               isTodayChecked 
-                ? "bg-white/5 border-white/10 text-white/20 cursor-default" 
-                : "bg-white/90 text-black border-white shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+                ? "bg-[#1a1a1a] border-white/20 text-white/70 cursor-default"
+                : "bg-white text-black border-white shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
             )}
           >
             {checkingIn ? (
