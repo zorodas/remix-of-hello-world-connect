@@ -466,6 +466,7 @@ const CheckinPage = () => {
   const [currentDay, setCurrentDay] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [successMsg, setSuccessMsg] = useState<{ ldex: string, pts: number, zkLTC?: string, hash?: string } | null>(null);
   const [checkinError, setCheckinError] = useState<string | null>(null);
 
@@ -561,6 +562,8 @@ const CheckinPage = () => {
         totalCheckins: Number(newInfo.totalCheckins),
         nextLDEX: newInfo.nextLDEX
       });
+      setConfirmed(true);
+      try { await fetchData(); } catch { /* ignore */ }
     } catch (err: any) {
       console.error(err);
       const msg = err.message || err.toString() || "";
@@ -574,7 +577,7 @@ const CheckinPage = () => {
     }
   };
 
-  const isTodayChecked = info && info.lastDay === currentDay;
+  const isTodayChecked = confirmed || (info && info.lastDay === currentDay);
   const streak = info ? info.streak : 0;
   
   // Calculate Sunday bonus info for display
@@ -653,7 +656,7 @@ const CheckinPage = () => {
           </div>
         )}
 
-        <Card className="bg-black/60 border-white/10 p-5 relative overflow-hidden backdrop-blur-3xl shadow-[0_0_80px_rgba(0,0,0,0.5)] border-2">
+        <Card className="bg-black dark:bg-black/60 border-white/10 p-5 relative overflow-hidden backdrop-blur-3xl shadow-[0_0_80px_rgba(0,0,0,0.5)] border-2">
 
         {/* Scanline Effect */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
@@ -1411,6 +1414,24 @@ const ERC20Form = ({ onDeployed }: any) => {
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [txStatus, setTxStatus] = useState<"success" | "failed" | null>(null);
+  const [deployDaily, setDeployDaily] = useState<number>(0);
+
+  const refreshDeployDaily = async () => {
+    if (!address) return;
+    try {
+      const p = await readPoints(address);
+      setDeployDaily(Number(p.deployDaily));
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => {
+    refreshDeployDaily();
+    const onRefresh = () => refreshDeployDaily();
+    window.addEventListener("litdex:points-refresh", onRefresh);
+    return () => window.removeEventListener("litdex:points-refresh", onRefresh);
+  }, [address]);
+
+  const capReachedDisplay = deployDaily >= 100;
 
   const handleDeploy = async () => {
     if (!name || !symbol || !supply) { showError("Please fill all fields"); return; }
@@ -1451,7 +1472,7 @@ const ERC20Form = ({ onDeployed }: any) => {
       } catch { /* ignore */ }
 
       setTimeout(async () => {
-        try { if (address) await readPoints(address); } catch { /* ignore */ }
+        try { if (address) await refreshDeployDaily(); } catch { /* ignore */ }
         refreshPoints();
         const capReached = dailyBefore >= 100n;
         if (capReached) {
@@ -1616,7 +1637,7 @@ const ERC20Form = ({ onDeployed }: any) => {
             <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Points Reward</p>
-                <h4 className="text-2xl font-black text-white mt-1">+5 points</h4>
+                <h4 className="text-2xl font-black text-white mt-1">{capReachedDisplay ? "DAILY CAP REACHED" : "+5 points"}</h4>
               </div>
               <Coins className="text-white opacity-20" size={32} />
             </div>
@@ -1658,7 +1679,7 @@ const ERC20Form = ({ onDeployed }: any) => {
               <p className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">Free deployment</p>
               <div className="flex items-center justify-center gap-2 text-white/50">
                 <Sparkles size={12} />
-                <span className="text-[9px] font-bold uppercase tracking-widest">+5 points earned automatically (10/100 today)</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest">+5 points earned automatically ({deployDaily}/100 today)</span>
               </div>
               <p className="text-[9px] text-brand-text-muted italic opacity-60">
                 Deploys via LitDeXDeployer • points credited automatically by relayer.
