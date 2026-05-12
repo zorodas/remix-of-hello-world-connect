@@ -3259,7 +3259,7 @@ const ConvertPopup = ({ open, onClose, address, tier, points, onConverted }: any
     return () => clearInterval(t);
   }, [cooldown]);
 
-  const tierKey = (tier || "common").toLowerCase();
+  const tierKey = String(tier ?? "common").toLowerCase();
   const rate = RATE_BY_TIER[tierKey] ?? RATE_BY_TIER.common;
   const n = parseInt(val) || 0;
   const preview = (n * rate).toFixed(7);
