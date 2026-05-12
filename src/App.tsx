@@ -3346,6 +3346,7 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const [stats, setStats] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [board, setBoard] = useState<any>(null);
+  const [convertStats, setConvertStats] = useState<any>(null);
   const [convertOpen, setConvertOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
 
@@ -3360,6 +3361,10 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
     try {
       const r2 = await fetch(`${MATHSLASH_API}/user/${lowerAddr}`);
       if (r2.ok) setUser(await r2.json());
+    } catch { /* ignore */ }
+    try {
+      const r3 = await fetch(`${MATHSLASH_API}/convert/stats/${lowerAddr}`);
+      if (r3.ok) setConvertStats(await r3.json());
     } catch { /* ignore */ }
   };
   const fetchBoard = async () => {
@@ -3386,14 +3391,34 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const tierNum = (stats?.nftTier ?? user?.nft_tier ?? 0) as number;
   const tierLabel = TIER_NAMES[tierNum] || 'NONE';
   const tier = tierLabel.toLowerCase();
-  const points = (user?.total_points ?? user?.game_points ?? stats?.points ?? 0) as number;
+  const pointsToday = Number(stats?.pointsEarnedToday ?? 0);
+  const totalPoints = Number(stats?.totalPointsEarned ?? user?.total_points ?? 0);
+  const cu = convertStats?.user || convertStats || {};
+  const zkConvertedToday = Number(
+    cu.zkltcConvertedToday ?? cu.totalZkltcReceivedToday ?? cu.todayZkltcReceived ?? cu.zkltcReceivedToday ?? 0
+  );
+  const zkConvertedTotal = Number(cu.totalZkltcReceived ?? cu.zkltcReceivedTotal ?? 0);
   const gamesLeft = (stats?.gamesLeft ?? Math.max(0, 100 - (stats?.gamesPlayedToday ?? 0))) as number;
   const gamesToday = stats?.gamesPlayedToday ?? stats?.gamesToday ?? Math.max(0, 100 - gamesLeft);
-  const zkEarned = Number(stats?.totalZkLtcEarned ?? 0).toFixed(7);
   const isFree = stats?.isFree ?? (tierNum >= 3);
   const gameCost = stats?.gameCost ?? 0;
   const entries: any[] = board?.leaderboard || board?.entries || board?.players || [];
   const week = board?.week || board?.currentWeek || '';
+
+  // 24h cooldown derived from convert stats
+  const lastConvertTs = (() => {
+    const v = cu.lastConvertAt ?? cu.lastConvertedAt ?? cu.lastConvert ?? convertStats?.lastConvertAt;
+    if (!v) return 0;
+    const t = typeof v === 'number' ? (v < 1e12 ? v * 1000 : v) : Date.parse(v);
+    return isNaN(t) ? 0 : t;
+  })();
+  const cooldownRemaining = (() => {
+    const explicit = Number(cu.cooldownRemaining ?? convertStats?.cooldownRemaining ?? 0);
+    if (explicit > 0) return Math.floor(explicit);
+    if (!lastConvertTs) return 0;
+    const diff = Math.floor((lastConvertTs + 24 * 3600 * 1000 - Date.now()) / 1000);
+    return diff > 0 ? diff : 0;
+  })();
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8 max-w-7xl mx-auto px-4">
@@ -3424,14 +3449,22 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
               <div className="text-brand-text-primary text-sm">{isFree ? 'FREE' : `${gameCost} PTS`}</div>
             </div>
             <div className="mb-3">
-              <div className="text-[10px] uppercase text-brand-text-muted">zkLTC Earned Today</div>
-              <div className="text-brand-text-primary text-sm">{zkEarned}</div>
+              <div className="text-[10px] uppercase text-brand-text-muted">Points Today</div>
+              <div className="text-brand-text-primary text-sm">{pointsToday}</div>
             </div>
-            <button onClick={() => setConvertOpen(true)} className="w-full text-left mt-2">
-              <div className="text-[10px] uppercase text-brand-text-muted">Points</div>
-              <div className="text-brand-text-primary text-2xl font-bold">{points}</div>
-              <div className="text-brand-text-muted opacity-60 text-[10px] mt-1">tap to convert → zkLTC</div>
+            <button onClick={() => setConvertOpen(true)} className="w-full text-left mb-3">
+              <div className="text-[10px] uppercase text-brand-text-muted">Total Points</div>
+              <div className="text-brand-text-primary text-2xl font-bold">{totalPoints}</div>
+              <div className="text-[10px] mt-1" style={{ color: '#333' }}>tap to convert → zkLTC</div>
             </button>
+            <div className="mb-3">
+              <div className="text-[10px] uppercase text-brand-text-muted">zkLTC Converted Today</div>
+              <div className="text-brand-text-primary text-sm">{zkConvertedToday.toFixed(7)}</div>
+            </div>
+            <div className="mb-1">
+              <div className="text-[10px] uppercase text-brand-text-muted">Total zkLTC Converted</div>
+              <div className="text-brand-text-primary text-sm">{zkConvertedTotal.toFixed(7)}</div>
+            </div>
           </div>
 
           {/* Game */}
