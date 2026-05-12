@@ -3447,6 +3447,18 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const totalPoints = Number(stats?.totalPointsEarned ?? user?.total_points ?? 0);
   const cu = convertStats?.user || convertStats || {};
   const zkConvertedTotal = Number(cu.totalZkltcReceived ?? cu.zkltcReceivedTotal ?? 0);
+  const zkConvertedToday = (() => {
+    const apiToday = Number(cu.zkltcReceivedToday ?? cu.totalZkltcReceivedToday ?? cu.zkltcToday ?? 0);
+    if (apiToday > 0) return apiToday;
+    try {
+      if (!lowerAddr) return 0;
+      const raw = localStorage.getItem(`mathslash_today_${lowerAddr}`);
+      if (!raw) return 0;
+      const { ts, zkltc } = JSON.parse(raw);
+      if (!ts || Date.now() - ts > 24 * 3600 * 1000) return 0;
+      return Number(zkltc) || 0;
+    } catch { return 0; }
+  })();
   const gamesLeft = (stats?.gamesLeft ?? Math.max(0, 100 - (stats?.gamesPlayedToday ?? 0))) as number;
   const gamesToday = stats?.gamesPlayedToday ?? stats?.gamesToday ?? Math.max(0, 100 - gamesLeft);
   const isFree = stats?.isFree ?? (tierNum >= 3);
