@@ -1732,15 +1732,6 @@ const LitDeX = (() => {
       if (!accounts || accounts.length === 0) throw new Error('No accounts returned');
       walletAddress = accounts[0];
 
-      const switched = await switchChain();
-      if (!switched) {
-        showErr('wallet-error', '⚠ Please switch to LiteForge (Chain ID 4441) in MetaMask.');
-        connectBtn.textContent = 'CONNECT WALLET';
-        connectBtn.style.opacity = '1';
-        connectBtn.style.pointerEvents = 'auto';
-        return;
-      }
-
       // Show start screen, populate wallet card
       walletScr.classList.add('hidden');
       startScr.classList.remove('hidden');
@@ -1917,33 +1908,38 @@ const LitDeX = (() => {
 
   // ── Init: bind connect button, watch account changes ─────────────────
   async function init() {
-    // Auto-detect already-connected wallet (no popup)
-    if (window.ethereum) {
+    const walletFromUrl = new URLSearchParams(window.location.search).get('wallet');
+
+    if (walletFromUrl) {
+      walletAddress = walletFromUrl;
+      const walletScr = el('wallet-screen');
+      const startScr  = el('start-screen');
+      if (walletScr) walletScr.classList.add('hidden');
+      if (startScr)  startScr.classList.remove('hidden');
+      const addrEl = el('wallet-addr');
+      if (addrEl) addrEl.textContent = walletAddress.slice(0,6) + '…' + walletAddress.slice(-4);
+      await loadStats();
+    } else if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
           walletAddress = accounts[0];
-          const switched = await switchChain();
-          if (switched) {
-            // Skip wallet screen, go straight to start screen
-            const walletScr = el('wallet-screen');
-            const startScr  = el('start-screen');
-            if (walletScr) walletScr.classList.add('hidden');
-            if (startScr)  startScr.classList.remove('hidden');
-            const addrEl = el('wallet-addr');
-            if (addrEl) addrEl.textContent = walletAddress.slice(0,6) + '…' + walletAddress.slice(-4);
-            await loadStats();
-          }
+          const walletScr = el('wallet-screen');
+          const startScr  = el('start-screen');
+          if (walletScr) walletScr.classList.add('hidden');
+          if (startScr)  startScr.classList.remove('hidden');
+          const addrEl = el('wallet-addr');
+          if (addrEl) addrEl.textContent = walletAddress.slice(0,6) + '…' + walletAddress.slice(-4);
+          await loadStats();
         }
       } catch(e) {
         console.warn('[LitDeX] Auto-detect wallet error:', e.message);
       }
 
-      window.ethereum.on('accountsChanged', accs => {
+      window.ethereum.on('accountsChanged', () => {
         // Wallet disconnected or changed — reload page
         location.reload();
       });
-      window.ethereum.on('chainChanged', () => location.reload());
     }
 
     // Fallback connect button still works if needed
