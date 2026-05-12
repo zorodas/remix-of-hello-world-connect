@@ -3249,7 +3249,7 @@ const tierKeyFromAny = (t: any): string => {
   return String(t ?? 'common').toLowerCase();
 };
 
-const ConvertPopup = ({ open, onClose, address, tier, points, onConverted }: any) => {
+const ConvertPopup = ({ open, onClose, address, tier, points, onConverted, initialCooldown = 0 }: any) => {
   const [val, setVal] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -3257,7 +3257,8 @@ const ConvertPopup = ({ open, onClose, address, tier, points, onConverted }: any
 
   useEffect(() => {
     if (!open) { setVal(""); setMsg(null); }
-  }, [open]);
+    else { setCooldown(Math.max(0, Math.floor(initialCooldown || 0))); }
+  }, [open, initialCooldown]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
