@@ -3243,6 +3243,12 @@ const RATE_BY_TIER: Record<string, number> = {
   epic: 0.0000999,
 };
 
+const TIER_NAMES: Record<number, string> = { 0: 'NONE', 1: 'COMMON', 2: 'RARE', 3: 'EPIC' };
+const tierKeyFromAny = (t: any): string => {
+  if (typeof t === 'number') return (TIER_NAMES[t] || 'NONE').toLowerCase();
+  return String(t ?? 'common').toLowerCase();
+};
+
 const ConvertPopup = ({ open, onClose, address, tier, points, onConverted }: any) => {
   const [val, setVal] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -3259,7 +3265,7 @@ const ConvertPopup = ({ open, onClose, address, tier, points, onConverted }: any
     return () => clearInterval(t);
   }, [cooldown]);
 
-  const tierKey = String(tier ?? "common").toLowerCase();
+  const tierKey = tierKeyFromAny(tier);
   const rate = RATE_BY_TIER[tierKey] ?? RATE_BY_TIER.common;
   const n = parseInt(val) || 0;
   const preview = (n * rate).toFixed(7);
