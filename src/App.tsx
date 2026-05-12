@@ -3586,6 +3586,8 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
               <div className="pt-2 opacity-70">Top 20 rewarded every Sunday midnight IST</div>
             </div>
           </div>
+
+          <GlobalConvertStats />
         </div>
       )}
       <ConvertPopup
