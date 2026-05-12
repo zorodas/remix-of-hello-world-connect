@@ -262,3 +262,8 @@ input[type=number] {
   .litdex-mobile-menu { display: flex; }
 }
 
+
+/* Hide nav when in-game */
+body.hide-nav .litdex-desktop-nav,
+body.hide-nav .litdex-mobile-hamburger { display: none !important; }
+
