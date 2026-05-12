@@ -3532,7 +3532,8 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
         onClose={() => setConvertOpen(false)}
         address={lowerAddr}
         tier={tier}
-        points={points}
+        points={pointsToday}
+        initialCooldown={cooldownRemaining}
         onConverted={fetchStats}
       />
     </motion.div>
