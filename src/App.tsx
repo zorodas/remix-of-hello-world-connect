@@ -3301,6 +3301,9 @@ const ConvertPopup = ({ open, onClose, address, tier, points, onConverted, initi
         const zkltc = data?.zkltcReceived ?? data?.zkltc ?? preview;
         setSuccess({ pts: n, zkltc: String(zkltc), txHash });
         setCooldown(24 * 3600);
+        try {
+          if (address) localStorage.setItem(`mathslash_today_${address.toLowerCase()}`, JSON.stringify({ ts: Date.now(), zkltc: String(zkltc) }));
+        } catch { /* ignore */ }
         onConverted?.();
         setTimeout(() => { onClose?.(); }, 3000);
       }
