@@ -3446,8 +3446,8 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const tierNum = (stats?.nftTier ?? user?.nft_tier ?? 0) as number;
   const tierLabel = TIER_NAMES[tierNum] || 'NONE';
   const tier = tierLabel.toLowerCase();
-  const pointsToday = Number(stats?.pointsEarnedToday ?? 0);
-  const totalPoints = Number(stats?.totalPointsEarned ?? user?.total_points ?? 0);
+  const pointsToday = Math.max(0, Number(stats?.pointsEarnedToday ?? 0));
+  const totalPoints = Math.max(0, Number(stats?.totalPointsEarned ?? user?.total_points ?? 0));
   const cu = convertStats?.user || convertStats || {};
   const zkConvertedTotal = Number(cu.totalZkltcReceived ?? cu.zkltcReceivedTotal ?? 0);
   const zkConvertedToday = (() => {
