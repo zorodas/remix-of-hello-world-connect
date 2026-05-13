@@ -1496,6 +1496,20 @@
 
     // Call LitDeX /end endpoint
     LitDeX.endSession(score);
+
+    // Tap-guard: prevent stray finger from gameplay auto-triggering
+    // PLAY AGAIN / EXIT when the screen pops up. Buttons are inert for
+    // 600ms after the game-over screen appears.
+    isSlicing = false;
+    const _restart = document.getElementById('restart-btn');
+    const _exit    = document.getElementById('exit-btn');
+    if (_restart) { _restart.style.pointerEvents = 'none'; _restart.style.opacity = '0.5'; }
+    if (_exit)    { _exit.style.pointerEvents    = 'none'; _exit.style.opacity    = '0.5'; }
+    setTimeout(() => {
+      if (gameState !== 'gameover') return;
+      if (_restart) { _restart.style.pointerEvents = 'auto'; _restart.style.opacity = '1'; _restart.textContent = 'PLAY AGAIN'; }
+      if (_exit)    { _exit.style.pointerEvents    = 'auto'; _exit.style.opacity    = '1'; }
+    }, 600);
   }
 
   // ═════════════════════════════════════════════════════
