@@ -3446,8 +3446,8 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
   const tierNum = (stats?.nftTier ?? user?.nft_tier ?? 0) as number;
   const tierLabel = TIER_NAMES[tierNum] || 'NONE';
   const tier = tierLabel.toLowerCase();
-  const pointsToday = Number(stats?.pointsEarnedToday ?? 0);
-  const totalPoints = Number(stats?.totalPointsEarned ?? user?.total_points ?? 0);
+  const pointsToday = Math.max(0, Number(stats?.pointsEarnedToday ?? 0));
+  const totalPoints = Math.max(0, Number(stats?.totalPointsEarned ?? user?.total_points ?? 0));
   const cu = convertStats?.user || convertStats || {};
   const zkConvertedTotal = Number(cu.totalZkltcReceived ?? cu.zkltcReceivedTotal ?? 0);
   const zkConvertedToday = (() => {
@@ -3575,10 +3575,10 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
                 <div className="text-[10px] uppercase text-brand-text-muted">Points Today</div>
                 <div className="text-brand-text-primary text-sm">{pointsToday}</div>
               </div>
-              <button onClick={() => setConvertOpen(true)} className="text-left mb-0 lg:mb-3 shrink-0 lg:shrink lg:w-full snap-start min-w-[160px] lg:min-w-0">
+              <button onClick={() => { if (totalPoints > 0) setConvertOpen(true); }} disabled={totalPoints <= 0} className="text-left mb-0 lg:mb-3 shrink-0 lg:shrink lg:w-full snap-start min-w-[160px] lg:min-w-0 disabled:cursor-default">
                 <div className="text-[10px] uppercase text-brand-text-muted">Total Points</div>
                 <div className="text-brand-text-primary text-2xl font-bold">{totalPoints}</div>
-                <div className="text-[10px] mt-1" style={{ color: '#333' }}>tap to convert → zkLTC</div>
+                {totalPoints > 0 && <div className="text-[10px] mt-1" style={{ color: '#333' }}>tap to convert → zkLTC</div>}
               </button>
               <div className="mb-0 lg:mb-3 shrink-0 lg:shrink snap-start min-w-[160px] lg:min-w-0">
                 <div className="text-[10px] uppercase text-brand-text-muted">zkLTC Converted Today</div>
