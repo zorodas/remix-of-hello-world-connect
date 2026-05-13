@@ -370,6 +370,22 @@
     box-shadow: 0 6px 30px rgba(255,255,255,0.25), inset 0 1px 0 rgba(255,255,255,0.4);
   }
   .start-btn:active { transform: scale(0.97); }
+  .start-btn, .tut-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    z-index: 9999;
+    pointer-events: auto;
+    min-height: 56px;
+  }
+  @media (max-width: 768px) {
+    .start-btn, .tut-btn {
+      width: calc(100% - 40px);
+      max-width: 360px;
+    }
+  }
 
   #gameover-screen {
     background: radial-gradient(ellipse at center, rgba(20,20,20,0.85) 0%, rgba(0,0,0,0.95) 100%);
